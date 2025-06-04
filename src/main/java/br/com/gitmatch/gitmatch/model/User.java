@@ -24,4 +24,13 @@ public class User {
 
     @Column(name = "github_username", nullable = false)
     private String githubUsername;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_usuario", nullable = false)
+    private TipoUsuario tipoUsuario;
+
+    public enum TipoUsuario {
+        CANDIDATO,
+        EMPRESA
+    }
 }
