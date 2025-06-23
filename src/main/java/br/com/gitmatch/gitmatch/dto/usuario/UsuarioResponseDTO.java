@@ -1,5 +1,6 @@
 package br.com.gitmatch.gitmatch.dto.usuario;
 
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 

@@ -4,6 +4,7 @@ import br.com.gitmatch.gitmatch.repository.usuario.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.*;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.userdetails.User;
 
 @Service
 public class UsuarioDetailsService implements UserDetailsService {
@@ -17,7 +18,7 @@ public class UsuarioDetailsService implements UserDetailsService {
                 .map(usuario -> User.builder()
                         .username(usuario.getEmail())
                         .password(usuario.getSenhaHash())
-                        .roles(usuario.getTipoUsuario().toUpperCase())
+                        .roles(usuario.getTipoUsuario().name()) 
                         .build()
                 ).orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
     }

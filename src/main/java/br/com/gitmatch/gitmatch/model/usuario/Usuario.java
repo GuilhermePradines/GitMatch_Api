@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 
+import br.com.gitmatch.gitmatch.enums.TipoUsuario;
+
 @Entity
 @Table(name = "usuarios")
 @Data
@@ -29,8 +31,9 @@ public class Usuario {
 
     private String fotoPerfil;
 
-    @Column(nullable = false)
-    private String tipoUsuario; // candidato ou empresa
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_usuario", nullable = false)
+    private TipoUsuario tipoUsuario; 
 
     @Column(unique = true)
     private String cnpj;
