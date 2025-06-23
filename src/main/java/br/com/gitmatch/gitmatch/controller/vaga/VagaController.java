@@ -43,8 +43,8 @@ public class VagaController {
         String email = auth.getName();
         Long idUsuario = vagaService.getUsuarioIdByEmail(email);
 
-        // Aqui o percentualCompatibilidade deve vir da lógica de matching da API do GitHub (a implementar)
-        Double percentualCompatibilidade = 85.0; // Exemplo estático
+        // lógica de matching da API do GitHub (a implementar)
+        Double percentualCompatibilidade = 85.0; 
 
         CandidaturaDetalhesDTO candidatura = vagaService.candidatar(idUsuario, dto.getIdVaga(), percentualCompatibilidade);
         return ResponseEntity.ok(candidatura);
