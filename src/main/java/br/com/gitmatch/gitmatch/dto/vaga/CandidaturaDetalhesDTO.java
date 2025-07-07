@@ -1,5 +1,6 @@
 package br.com.gitmatch.gitmatch.dto.vaga;
 
+import br.com.gitmatch.gitmatch.dto.usuario.UsuarioResumoDTO;
 import lombok.Data;
 import java.time.LocalDateTime;
 
@@ -10,4 +11,5 @@ public class CandidaturaDetalhesDTO {
     private Long idVaga;
     private Double percentualCompatibilidade;
     private LocalDateTime dataCandidatura;
+    private UsuarioResumoDTO candidato;
 }

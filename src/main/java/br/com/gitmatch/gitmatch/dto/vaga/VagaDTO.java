@@ -8,5 +8,7 @@ public class VagaDTO {
     private String titulo;
     private String descricao;
     private String areaAtuacao;
-    private Set<String> tecnologias;  
+    private Set<String> tecnologias;
+    private String localizacao; 
+    private String turno;   
 }

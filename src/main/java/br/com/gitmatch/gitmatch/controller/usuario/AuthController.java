@@ -159,4 +159,34 @@ public class AuthController {
 
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/alterar-senha")
+    public ResponseEntity<String> alterarSenha(@RequestBody AlterarSenhaDTO dto, Authentication authentication) {
+        String email = authentication.getName();
+        usuarioService.alterarSenha(email, dto.getSenhaAtual(), dto.getNovaSenha());
+        return ResponseEntity.ok("Senha alterada com sucesso.");
+    }
+
+    @PostMapping("/recuperar-senha")
+    public ResponseEntity<String> enviarCodigo(@RequestBody RecuperarSenhaDTO dto) {
+        usuarioService.enviarCodigoRecuperacao(dto.getEmail());
+        return ResponseEntity.ok("Código enviado.");
+    }
+
+    @PostMapping("/verificar-codigo")
+    public ResponseEntity<String> verificarCodigo(@RequestBody VerificarCodigoDTO dto) {
+        usuarioService.verificarCodigo(dto.getEmail(), dto.getToken());
+        return ResponseEntity.ok("Código válido.");
+    }
+
+    @PostMapping("/redefinir-senha")
+    public ResponseEntity<String> redefinirSenha(@RequestBody RedefinirSenhaDTO dto) {
+        usuarioService.redefinirSenha(dto.getEmail(), dto.getNovaSenha());
+        return ResponseEntity.ok("Senha redefinida com sucesso.");
+    }
+
+    
+
+    
+    
 }

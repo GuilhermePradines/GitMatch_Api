@@ -28,7 +28,7 @@ public class Candidatura {
     @JoinColumn(name = "id_vaga", nullable = false)
     private Vaga vaga;
 
-    @Column(nullable = false, precision = 5, scale = 2)
+    @Column(nullable = false, precision = 5)
     private Double percentualCompatibilidade;
 
     @Column(nullable = false)

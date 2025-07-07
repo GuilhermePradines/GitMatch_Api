@@ -3,15 +3,18 @@ package br.com.gitmatch.gitmatch.model.vaga;
 import br.com.gitmatch.gitmatch.model.usuario.Usuario;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.Set;
+import java.util.Objects;
 
 @Entity
 @Table(name = "vagas")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class Vaga {
@@ -33,6 +36,12 @@ public class Vaga {
     @Column(length = 100)
     private String areaAtuacao;
 
+    @Column(length = 100)
+    private String localizacao; 
+
+    @Column(length = 50)
+    private String turno;
+
     @Column(nullable = false)
     private LocalDateTime dataCriacao = LocalDateTime.now();
 
@@ -47,5 +56,16 @@ public class Vaga {
     )
     private Set<Tecnologia> tecnologias;
 
-    
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Vaga)) return false;
+        Vaga vaga = (Vaga) o;
+        return idVaga != null && idVaga.equals(vaga.idVaga);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(idVaga);
+    }
 }

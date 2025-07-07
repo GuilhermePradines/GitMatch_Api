@@ -11,6 +11,8 @@ public class VagaDetalhesDTO {
     private String descricao;
     private String areaAtuacao;
     private LocalDateTime dataCriacao;
+    private String localizacao; 
+    private String turno; 
     private boolean ativo;
     private Set<String> tecnologias;
     private Long idEmpresa;
