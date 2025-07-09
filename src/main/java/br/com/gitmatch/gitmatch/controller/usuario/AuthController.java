@@ -167,6 +167,12 @@ public class AuthController {
         return ResponseEntity.ok("Senha alterada com sucesso.");
     }
 
+
+
+
+
+
+    //nao ta usando
     @PostMapping("/recuperar-senha")
     public ResponseEntity<String> enviarCodigo(@RequestBody RecuperarSenhaDTO dto) {
         usuarioService.enviarCodigoRecuperacao(dto.getEmail());

@@ -15,15 +15,29 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Timestamp;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
+
 @RestController
 @RequestMapping("/vaga")
 @CrossOrigin(origins = "*")
 public class VagaController {
+    @PersistenceContext
+private EntityManager entityManager;
 
     @Autowired
     private VagaService vagaService;
@@ -33,6 +47,8 @@ public class VagaController {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+
 
     @PostMapping("/criar")
     public ResponseEntity<VagaDetalhesDTO> criarVaga(@RequestBody VagaDTO dto,
@@ -74,12 +90,182 @@ public class VagaController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/candidaturas/{idVaga}")
-    public ResponseEntity<List<CandidaturaDetalhesDTO>> listarCandidaturasPorVaga(@PathVariable Long idVaga,
-                                                                                   @AuthenticationPrincipal Usuario usuario) {
-        List<CandidaturaDetalhesDTO> candidaturas = vagaService.listarCandidaturasPorVaga(idVaga);
-        return ResponseEntity.ok(candidaturas);
+
+    @GetMapping("/empresa/candidatosVaga/{idVaga}")
+    
+//     public ResponseEntity<?> listarCandidaturasDetalhadas(@PathVariable Long idVaga) {
+//     List<CandidaturaDetalhesDTO> lista = vagaService.listarCandidaturasPorVaga(idVaga);
+//     Vaga vaga = vagaRepo.findById(idVaga).orElseThrow();
+    
+//     Map<String, Object> resposta = new HashMap<>();
+//     resposta.put("tituloVaga", vaga.getTitulo());
+//     resposta.put("empresa", vaga.getEmpresa().getNome());
+//     resposta.put("candidatos", lista);
+
+//     return ResponseEntity.ok(resposta);
+// }
+
+// public ResponseEntity<?> listarCandidatosDetalhadosRaw(@PathVariable Long idVaga) {
+    // Busca candidatos e enumera pelos KB do githun
+//     Vaga vaga = vagaRepo.findById(idVaga)
+//             .orElseThrow(() -> new RuntimeException("Vaga não encontrada"));
+
+//     String sql = """
+//         SELECT
+//             u.nome,
+//             u.profissao,
+//             u.github_username,
+//             c.percentual_compatibilidade,
+//             c.data_candidatura
+//         FROM candidaturas c
+//         JOIN usuarios u ON c.id_usuario = u.id_usuario
+//         WHERE c.id_vaga = :idVaga
+//     """;
+
+//     List<Object[]> resultados = entityManager
+//             .createNativeQuery(sql)
+//             .setParameter("idVaga", idVaga)
+//             .getResultList();
+
+//     List<Map<String, Object>> candidatos = new ArrayList<>();
+
+//     for (Object[] row : resultados) {
+//         String nome = (String) row[0];
+//         String profissao = (String) row[1];
+//         String github = (String) row[2];
+//         Double compatibilidade = row[3] != null ? ((Number) row[3]).doubleValue() : null;
+
+//         List<List<Object>> linguagens = new ArrayList<>();
+//         long totalBytes = 0;
+//         int totalFrameworks = 0;
+
+//         try {
+//             linguagens = GitHubLangStats.buscarLinguagensEFrameworksDetalhados(github);
+
+//             totalBytes = linguagens.stream()
+//                     .filter(t -> t.get(1) instanceof Number)
+//                     .mapToLong(t -> ((Number) t.get(1)).longValue())
+//                     .sum();
+
+//             totalFrameworks = (int) linguagens.stream()
+//                     .filter(t -> t.get(1) instanceof Integer)
+//                     .mapToInt(t -> (Integer) t.get(1)).sum();
+
+//         } catch (Exception e) {
+//             System.err.println("Erro GitHub [" + github + "]: " + e.getMessage());
+//         }
+
+//         Map<String, Object> candidato = new HashMap<>();
+//         candidato.put("nome", nome);
+//         candidato.put("profissao", profissao);
+//         candidato.put("github", github);
+//         candidato.put("compatibilidade", compatibilidade);
+//         candidato.put("linguagens", linguagens);
+//         candidato.put("totalBytes", totalBytes);
+//         candidato.put("totalFrameworks", totalFrameworks);
+
+//         candidatos.add(candidato);
+//     }
+
+//     candidatos.sort(Comparator
+//             .comparing((Map<String, Object> c) -> (Double) c.get("compatibilidade"), Comparator.reverseOrder())
+//             .thenComparing(c -> (Long) c.get("totalBytes"), Comparator.reverseOrder())
+//             .thenComparing(c -> (Integer) c.get("totalFrameworks"), Comparator.reverseOrder())
+//     );
+
+//     Map<String, Object> resposta = new HashMap<>();
+//     resposta.put("vaga", vaga.getTitulo());
+//     resposta.put("empresa", vaga.getEmpresa().getNome());
+//     resposta.put("candidatos", candidatos);
+
+//     return ResponseEntity.ok(resposta);
+// }
+@SuppressWarnings("unchecked")// suprimi pq eu sei do promebla com a entity manager   
+    public ResponseEntity<?> listarCandidatosDetalhadosRaw(@PathVariable Long idVaga) {
+    Vaga vaga = vagaRepo.findById(idVaga)
+            .orElseThrow(() -> new RuntimeException("Vaga não encontrada"));
+
+
+    Set<String> linguagensVaga = vaga.getTecnologias().stream()
+            .map(t -> t.getNome().toLowerCase())
+            .collect(Collectors.toSet());
+
+    String sql = """
+        SELECT
+            u.nome,
+            u.profissao,
+            u.github_username,
+            c.percentual_compatibilidade,
+            c.data_candidatura
+        FROM candidaturas c
+        JOIN usuarios u ON c.id_usuario = u.id_usuario
+        WHERE c.id_vaga = :idVaga
+    """;
+
+    List<Object[]> resultados = entityManager
+            .createNativeQuery(sql)
+            .setParameter("idVaga", idVaga)
+            .getResultList();
+
+    List<Map<String, Object>> candidatos = new ArrayList<>();
+
+    for (Object[] row : resultados) {
+        String nome = (String) row[0];
+        String profissao = (String) row[1];
+        String github = (String) row[2];
+        Double compatibilidade = row[3] != null ? ((Number) row[3]).doubleValue() : null;
+
+        List<List<Object>> linguagens = new ArrayList<>();
+        long totalBytesMatch = 0;
+        int totalFrameworks = 0;
+
+        try {
+            linguagens = GitHubLangStats.buscarLinguagensEFrameworksDetalhados(github);
+
+            totalBytesMatch = linguagens.stream()
+                    .filter(t -> t.get(1) instanceof Number)
+                    .filter(t -> linguagensVaga.contains(((String) t.get(0)).toLowerCase()))
+                    .mapToLong(t -> ((Number) t.get(1)).longValue())
+                    .sum();
+
+            totalFrameworks = (int) linguagens.stream()
+                    .filter(t -> t.get(1) instanceof Integer)
+                    .mapToInt(t -> (Integer) t.get(1)).sum();
+
+        } catch (Exception e) {
+            System.err.println("Erro GitHub [" + github + "]: " + e.getMessage());
+        }
+
+        Map<String, Object> candidato = new HashMap<>();
+        candidato.put("nome", nome);
+        candidato.put("profissao", profissao);
+        candidato.put("github", github);
+        candidato.put("compatibilidade", compatibilidade);
+        candidato.put("linguagens", linguagens);
+        candidato.put("totalBytesMatch", totalBytesMatch);
+        candidato.put("totalFrameworks", totalFrameworks);
+
+        candidatos.add(candidato);
     }
+
+    candidatos.sort(Comparator
+            .comparing((Map<String, Object> c) -> (Double) c.get("compatibilidade"), Comparator.reverseOrder())
+            .thenComparing(c -> (Long) c.get("totalBytesMatch"), Comparator.reverseOrder())
+            .thenComparing(c -> (Integer) c.get("totalFrameworks"), Comparator.reverseOrder())
+    );
+
+    Map<String, Object> resposta = new HashMap<>();
+    resposta.put("vaga", vaga.getTitulo());
+    resposta.put("empresa", vaga.getEmpresa().getNome());
+    resposta.put("candidatos", candidatos);
+
+    return ResponseEntity.ok(resposta);
+}
+
+
+
+
+
 
     @GetMapping("/tecnologias/{id}")
     public ResponseEntity<Set<String>> listarTecnologiasDaVaga(@PathVariable Long id) {
@@ -122,6 +308,23 @@ public class VagaController {
         }
     }
 
+
+        @GetMapping("/usuario/tecnologias/porcentagem")
+    public ResponseEntity<?> listarTecnologiasPorsentagen(@AuthenticationPrincipal Usuario usuario) {
+        try {
+            String githubUsername = usuario.getGithubUsername();
+            if (githubUsername == null || githubUsername.isEmpty()) {
+                return ResponseEntity.badRequest().body("Usuário não possui GitHub cadastrado.");
+            }
+
+            List<String> linguagens = GitHubLangStats.buscarTecnologiasComPorcentagem(githubUsername);
+            return ResponseEntity.ok(linguagens);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Erro ao buscar linguagens: " + e.getMessage());
+        }
+    }
+
     @GetMapping("/{vagaId}/compatibilidade/{usuarioId}")
     public ResponseEntity<Map<String, Object>> verificarCompatibilidade(@PathVariable Long vagaId,
                                                                          @PathVariable Long usuarioId) {
@@ -133,7 +336,7 @@ public class VagaController {
 
         List<String> linguagensGitHub;
         try {
-            linguagensGitHub = VagaService.getLanguageNames(usuario.getGithubUsername());
+            linguagensGitHub = GitHubLangStats.buscarLinguagensPorUsername(usuario.getGithubUsername());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                     .body(Map.of("erro", "Não foi possível acessar o GitHub: " + e.getMessage()));
@@ -165,7 +368,7 @@ public ResponseEntity<CandidaturaDetalhesDTO> candidatarSe(
 
     List<String> linguagensGitHub;
     try {
-        linguagensGitHub = VagaService.getLanguageNames(usuario.getGithubUsername());
+        linguagensGitHub = GitHubLangStats.buscarLinguagensPorUsername(usuario.getGithubUsername());
     } catch (Exception e) {
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(null);
     }

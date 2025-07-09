@@ -11,6 +11,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class VagaTecnologiaDTO {
+    private Long idVaga;
     private String tituloVaga;
     private String nomeEmpresa;
     private List<String> tecnologias;

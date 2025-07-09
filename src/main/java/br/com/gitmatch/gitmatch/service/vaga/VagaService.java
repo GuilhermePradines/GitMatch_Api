@@ -5,6 +5,12 @@ import br.com.gitmatch.gitmatch.model.usuario.Usuario;
 import br.com.gitmatch.gitmatch.model.vaga.*;
 import br.com.gitmatch.gitmatch.repository.usuario.UsuarioRepository;
 import br.com.gitmatch.gitmatch.repository.vaga.*;
+import br.com.gitmatch.gitmatch.service.GitHubLangStats;
+import ch.qos.logback.core.boolex.Matcher;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import br.com.gitmatch.gitmatch.dto.vaga.*;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +24,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import br.com.gitmatch.gitmatch.dto.usuario.UsuarioResumoDTO;
 @Service
@@ -192,29 +199,74 @@ public class VagaService {
         return dto;
     }
 
-    public List<CandidaturaDetalhesDTO> listarCandidaturasPorVaga(Long idVaga) {
-        Vaga vaga = vagaRepo.findById(idVaga)
-                .orElseThrow(() -> new RuntimeException("Vaga não encontrada"));
+ 
+@PersistenceContext
+private EntityManager entityManager;
 
-        List<Candidatura> candidaturas = candidaturaRepo.findByVaga(vaga);
+public List<CandidaturaDetalhesDTO> listarCandidaturasPorVaga(Long idVaga) {
+    Vaga vaga = vagaRepo.findById(idVaga)
+            .orElseThrow(() -> new RuntimeException("Vaga não encontrada"));
 
-        return candidaturas.stream().map(c -> {
-            CandidaturaDetalhesDTO dto = new CandidaturaDetalhesDTO();
-            dto.setIdCandidatura(c.getIdCandidatura());
-            dto.setIdVaga(c.getVaga().getIdVaga());
-            dto.setPercentualCompatibilidade(c.getPercentualCompatibilidade());
-            dto.setDataCandidatura(c.getDataCandidatura());
+    // 👇 Busca os candidatos com JOIN FETCH (sem criar Repository)
+    List<Candidatura> candidaturas = entityManager.createQuery(
+        "SELECT c FROM Candidatura c JOIN FETCH c.candidato WHERE c.vaga = :vaga", Candidatura.class)
+        .setParameter("vaga", vaga)
+        .getResultList();
 
-            UsuarioResumoDTO usuarioDTO = new UsuarioResumoDTO(
-                    c.getCandidato().getNome(),
-                    c.getCandidato().getProfissao(),
-                    c.getCandidato().getFotoPerfil());
+    return candidaturas.stream().map(c -> {
+        CandidaturaDetalhesDTO dto = new CandidaturaDetalhesDTO();
+        dto.setIdCandidatura(c.getIdCandidatura());
+        dto.setIdUsuario(c.getCandidato().getIdUsuario());
+        dto.setIdVaga(c.getVaga().getIdVaga());
+        dto.setPercentualCompatibilidade(c.getPercentualCompatibilidade());
+        dto.setDataCandidatura(c.getDataCandidatura());
 
-            dto.setCandidato(usuarioDTO);
+        UsuarioResumoDTO usuarioDTO = new UsuarioResumoDTO(
+            c.getCandidato().getNome(),
+            c.getCandidato().getProfissao(),
+            c.getCandidato().getFotoPerfil()
+        );
+        dto.setCandidato(usuarioDTO);
 
-            return dto;
-        }).collect(Collectors.toList());
-    }
+        try {
+            List<String> githubData = GitHubLangStats.buscarTecnologiasComPorcentagem(
+                c.getCandidato().getGithubUsername());
+
+            List<LinguagemTecnologiaDTO> linguagens = new ArrayList<>();
+            List<FrameworkProjetoDTO> frameworks = new ArrayList<>();
+
+            for (String item : githubData) {
+                if (item.contains("%")) {
+                    String[] parts = item.split(":");
+                    String nome = parts[0].trim();
+                    double porcentagem = Double.parseDouble(parts[1].replace("%", "").trim());
+                    long estimativaBytes = Math.round(porcentagem * 10000);
+                    linguagens.add(new LinguagemTecnologiaDTO(nome, estimativaBytes));
+                } else if (item.contains("projeto")) {
+                    java.util.regex.Matcher matcher = Pattern.compile("(.+) \\((\\d+) projeto").matcher(item);
+                    if (matcher.find()) {
+                        frameworks.add(new FrameworkProjetoDTO(matcher.group(1), Integer.parseInt(matcher.group(2))));
+                    }
+                }
+            }
+
+            dto.setLinguagens(linguagens);
+            dto.setFrameworks(frameworks);
+
+        } catch (Exception e) {
+            System.err.println("Erro GitHub [" + c.getCandidato().getGithubUsername() + "]: " + e.getMessage());
+        }
+
+        return dto;
+    })
+    .sorted(Comparator
+        .comparing(CandidaturaDetalhesDTO::getPercentualCompatibilidade).reversed()
+        .thenComparing(dto -> dto.getLinguagens().stream().mapToLong(LinguagemTecnologiaDTO::getBytes).sum(), Comparator.reverseOrder())
+        .thenComparing(dto -> dto.getFrameworks().stream().mapToInt(FrameworkProjetoDTO::getQuantidadeProjetos).sum(), Comparator.reverseOrder())
+    )
+    .collect(Collectors.toList());
+}
+
 
 
     public Long getUsuarioIdByEmail(String email) {
@@ -222,6 +274,14 @@ public class VagaService {
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"))
                 .getIdUsuario();
     }
+
+
+
+// endpoint d mano messias
+
+
+
+
 
 
 
@@ -235,6 +295,7 @@ List<Vaga> vagas = vagaRepo.findVagasAtivasPorTecnologias(tecArray);
 
     return vagas.stream()
             .map(v -> new VagaTecnologiaDTO(
+                    v.getIdVaga(),
                     v.getTitulo(),
                     v.getEmpresa().getNome(),
                     v.getTecnologias()

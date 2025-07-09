@@ -48,13 +48,29 @@ public interface VagaRepository extends JpaRepository<Vaga, Long> {
 //     List<Vaga> findVagasAtivasPorTecnologias(@Param("tecNames") String[] tecNames);
 // 
 @Query(value = """
-    SELECT DISTINCT v.*
-    FROM vagas v
-    JOIN vaga_tecnologias vt ON v.id_vaga = vt.id_vaga
-    JOIN tecnologias t ON vt.id_tecnologia = t.id_tecnologia
-    JOIN unnest(:tecNames) AS tech(name) ON LOWER(t.nome) LIKE LOWER(CONCAT('%', tech.name, '%'))
-    WHERE v.ativo = true
+  SELECT DISTINCT v.*
+FROM vagas v
+JOIN vaga_tecnologias vt ON v.id_vaga = vt.id_vaga
+JOIN tecnologias t ON vt.id_tecnologia = t.id_tecnologia
+JOIN unnest(:tecNames) AS tech(name) ON LOWER(t.nome) = LOWER(tech.name)
+WHERE v.ativo = true
+
     """, nativeQuery = true)
 List<Vaga> findVagasAtivasPorTecnologias(@Param("tecNames") String[] tecNames);
+
+
+@Query(value = """
+    SELECT
+        u.nome AS nome_candidato,
+        u.profissao AS profissao,
+        u.github_username AS github,
+        c.percentual_compatibilidade,
+        c.data_candidatura
+    FROM candidaturas c
+    JOIN usuarios u ON c.id_usuario = u.id_usuario
+    WHERE c.id_vaga = :idVaga
+    """, nativeQuery = true)
+List<Object[]> buscarCandidatosDetalhesPorVaga(@Param("idVaga") Long idVaga);
+
 
 }
