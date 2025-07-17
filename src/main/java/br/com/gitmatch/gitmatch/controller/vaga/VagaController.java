@@ -15,18 +15,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.security.Timestamp;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import java.util.stream.Collectors;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -47,6 +44,9 @@ private EntityManager entityManager;
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+
+    
 
 
 
@@ -180,11 +180,13 @@ private EntityManager entityManager;
 
 //     return ResponseEntity.ok(resposta);
 // }
+
+
+
 @SuppressWarnings("unchecked")// suprimi pq eu sei do promebla com a entity manager   
-    public ResponseEntity<?> listarCandidatosDetalhadosRaw(@PathVariable Long idVaga) {
+public ResponseEntity<?> listarCandidatosDetalhadosRaw(@PathVariable Long idVaga) {
     Vaga vaga = vagaRepo.findById(idVaga)
             .orElseThrow(() -> new RuntimeException("Vaga não encontrada"));
-
 
     Set<String> linguagensVaga = vaga.getTecnologias().stream()
             .map(t -> t.getNome().toLowerCase())
@@ -196,7 +198,8 @@ private EntityManager entityManager;
             u.profissao,
             u.github_username,
             c.percentual_compatibilidade,
-            c.data_candidatura
+            c.data_candidatura,
+            u.foto_perfil
         FROM candidaturas c
         JOIN usuarios u ON c.id_usuario = u.id_usuario
         WHERE c.id_vaga = :idVaga
@@ -214,6 +217,7 @@ private EntityManager entityManager;
         String profissao = (String) row[1];
         String github = (String) row[2];
         Double compatibilidade = row[3] != null ? ((Number) row[3]).doubleValue() : null;
+        String fotoPerfil = (String) row[5];
 
         List<List<Object>> linguagens = new ArrayList<>();
         long totalBytesMatch = 0;
@@ -240,6 +244,7 @@ private EntityManager entityManager;
         candidato.put("nome", nome);
         candidato.put("profissao", profissao);
         candidato.put("github", github);
+        candidato.put("fotoPerfil", fotoPerfil);
         candidato.put("compatibilidade", compatibilidade);
         candidato.put("linguagens", linguagens);
         candidato.put("totalBytesMatch", totalBytesMatch);
