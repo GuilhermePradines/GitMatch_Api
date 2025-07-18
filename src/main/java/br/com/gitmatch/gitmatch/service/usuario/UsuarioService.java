@@ -58,6 +58,7 @@ public class UsuarioService {
         String token = jwtUtil.generateToken(usuario.getEmail());
 
         return new UsuarioResponseDTO(
+                usuario.getIdUsuario(),
                 usuario.getNome(),
                 usuario.getEmail(),
                 usuario.getTipoUsuario().name(),
@@ -79,6 +80,7 @@ public class UsuarioService {
         String token = jwtUtil.generateToken(usuario.getEmail());
 
         return new UsuarioResponseDTO(
+                usuario.getIdUsuario(),
                 usuario.getNome(),
                 usuario.getEmail(),
                 usuario.getTipoUsuario().name(),

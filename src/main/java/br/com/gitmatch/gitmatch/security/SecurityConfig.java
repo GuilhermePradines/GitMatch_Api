@@ -27,10 +27,11 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
                 // Libera todas as rotas /email/** sem autenticação
-                .requestMatchers("/email/**").permitAll()
+                .requestMatchers("/email/**","/api/oauth/**").permitAll()
                 
                 // Mantém essas rotas públicas, como você já tinha
-                .requestMatchers("/usuario/register", "/usuario/login", "/usuario/verificar-codigo", "/usuario/redefinir-senha").permitAll()
+                .requestMatchers("/usuario/register", "/usuario/login", "/usuario/verificar-codigo", "/usuario/redefinir-senha"
+                ,"/api/oauth/github/callback", "/api/oauth/github/login").permitAll()
 
                 // O resto requer autenticação
                 .anyRequest().authenticated()

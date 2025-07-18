@@ -56,6 +56,7 @@ private EntityManager entityManager;
         VagaDetalhesDTO vagaCriada = vagaService.criarVaga(usuario.getIdUsuario(), dto);
         return ResponseEntity.ok(vagaCriada);
     }
+    
 
     @GetMapping("/empresa")
     public ResponseEntity<List<VagaDetalhesDTO>> listarVagasEmpresa(@AuthenticationPrincipal Usuario usuario) {
