@@ -6,6 +6,7 @@ import lombok.Data;
 
 @Data
 public class UsuarioDTO {
+    private String firebaseUid; // Novo campo para vincular ao Firebase
     private String nome;
     private String email;
     private String senha;

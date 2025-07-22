@@ -3,15 +3,22 @@ package br.com.gitmatch.gitmatch.controller.usuario;
 import br.com.gitmatch.gitmatch.dto.usuario.*;
 import br.com.gitmatch.gitmatch.enums.TipoUsuario;
 import br.com.gitmatch.gitmatch.model.usuario.Usuario;
+import br.com.gitmatch.gitmatch.model.vaga.Vaga;
 import br.com.gitmatch.gitmatch.repository.usuario.UsuarioRepository;
+import br.com.gitmatch.gitmatch.repository.vaga.CandidaturaRepository;
+import br.com.gitmatch.gitmatch.repository.vaga.VagaRepository;
 import br.com.gitmatch.gitmatch.security.JwtUtil;
 import br.com.gitmatch.gitmatch.service.usuario.UsuarioService;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -30,6 +37,13 @@ public class AuthController {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired 
+    private CandidaturaRepository candidaturaRepository;
+
+    @Autowired
+    private VagaRepository vagaRepository;
+
 
     @PostMapping("/register")
     public UsuarioResponseDTO cadastrar(@RequestBody UsuarioDTO dto) {
@@ -66,8 +80,9 @@ public class AuthController {
     @GetMapping("/me")
     public ResponseEntity<UsuarioDetalhesDTO> getUsuarioLogado(Authentication auth) {
         String email = auth.getName();
-        Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado"));
+        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado" + email));
+               
 
         UsuarioDetalhesDTO dto = new UsuarioDetalhesDTO(
                 usuario.getIdUsuario(),
@@ -140,34 +155,66 @@ public class AuthController {
         return ResponseEntity.ok(resposta);
     }
 
-    @DeleteMapping("/delete/{id}")
-    public ResponseEntity<Void> deletarUsuario(@PathVariable Long id, Authentication authentication) {
-        String emailLogado = authentication.getName();
+    
+@Transactional
+@DeleteMapping("/delete/{id}")
+public ResponseEntity<Void> deletarUsuario(@PathVariable Long id, Authentication authentication) {
+    Usuario usuarioLogado = (Usuario) authentication.getPrincipal();
+    String emailLogado = usuarioLogado.getEmail();
 
-        Usuario usuarioParaDeletar = usuarioRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado"));
+    Usuario usuarioParaDeletar = usuarioRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado"));
 
-        Usuario usuarioLogado = usuarioRepository.findByEmail(emailLogado)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário logado não encontrado"));
+    Usuario usuarioLogadoBanco = usuarioRepository.findByEmail(emailLogado)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário logado não encontrado"));
 
-        if (!usuarioLogado.getTipoUsuario().equals(TipoUsuario.ADMIN) &&
-                !usuarioLogado.getIdUsuario().equals(id)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Você não tem permissão para deletar este usuário");
+    if (!usuarioLogadoBanco.getTipoUsuario().equals(TipoUsuario.ADMIN) &&
+            !usuarioLogadoBanco.getIdUsuario().equals(id)) {
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Você não tem permissão para deletar este usuário");
+    }
+
+    // Se for empresa, deleta as candidaturas de todas as vagas dela
+    if (usuarioParaDeletar.getTipoUsuario().equals(TipoUsuario.EMPRESA)) {
+        List<Vaga> vagasDaEmpresa = vagaRepository.findAllByEmpresa(usuarioParaDeletar);
+
+        for (Vaga vaga : vagasDaEmpresa) {
+            candidaturaRepository.deleteAllByVaga(vaga);
         }
 
-        usuarioRepository.delete(usuarioParaDeletar);
-
-        return ResponseEntity.noContent().build();
+        vagaRepository.deleteAllByEmpresa(usuarioParaDeletar);
     }
+
+    // Se for candidato, deleta as candidaturas dele
+    if (usuarioParaDeletar.getTipoUsuario().equals(TipoUsuario.CANDIDATO)) {
+        candidaturaRepository.deleteAllByCandidato(usuarioParaDeletar);
+    }
+
+    usuarioRepository.delete(usuarioParaDeletar);
+
+    return ResponseEntity.noContent().build();
+}
+
+
+
+
 
     @PutMapping("/alterar-senha")
-    public ResponseEntity<String> alterarSenha(@RequestBody AlterarSenhaDTO dto, Authentication authentication) {
-        String email = authentication.getName();
-        usuarioService.alterarSenha(email, dto.getSenhaAtual(), dto.getNovaSenha());
+    // public ResponseEntity<String> alterarSenha(@RequestBody AlterarSenhaDTO dto, Authentication authentication) {
+    //     String email = authentication.getName();
+    //     usuarioService.alterarSenha(email, dto.getSenhaAtual(), dto.getNovaSenha());
+    //     return ResponseEntity.ok("Senha alterada com sucesso.");
+    // }
+
+public ResponseEntity<?> alterarSenha(
+        @RequestBody AlterarSenhaDTO dto,
+        @AuthenticationPrincipal Usuario usuario) {
+    try {
+        usuarioService.alterarSenha(usuario.getEmail(), dto.getSenhaAtual(), dto.getNovaSenha());
         return ResponseEntity.ok("Senha alterada com sucesso.");
+    } catch (RuntimeException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
     }
-
-
+}
 
 
 

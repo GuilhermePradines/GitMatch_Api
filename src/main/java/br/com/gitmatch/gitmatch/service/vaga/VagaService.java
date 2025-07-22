@@ -124,18 +124,23 @@ public class VagaService {
         return converterParaDTO(vaga);
     }
 
-    @Transactional
-    public void desativarVaga(Long idVaga, Long idEmpresa) {
-        Vaga vaga = vagaRepo.findById(idVaga)
-                .orElseThrow(() -> new RuntimeException("Vaga não encontrada"));
+ public void deletarVaga(Long idVaga, Long idEmpresa) {
+    Vaga vaga = vagaRepo.findById(idVaga)
+            .orElseThrow(() -> new RuntimeException("Vaga não encontrada"));
 
-        if (!vaga.getEmpresa().getIdUsuario().equals(idEmpresa)) {
-            throw new RuntimeException("Você não tem permissão para deletar esta vaga");
-        }
-
-        vaga.setAtivo(false);
-        vagaRepo.save(vaga);
+    if (!vaga.getEmpresa().getIdUsuario().equals(idEmpresa)) {
+        throw new RuntimeException("Você não tem permissão para deletar esta vaga");
     }
+
+    
+    List<Candidatura> candidaturas = candidaturaRepo.findByVaga(vaga);
+    candidaturaRepo.deleteAll(candidaturas);
+
+    vagaRepo.delete(vaga);
+}
+
+
+
 
 
     public List<VagaDetalhesDTO> listarTodasVagas() {
@@ -364,6 +369,9 @@ public int calcularCompatibilidade(List<String> tecnologiasVaga, List<String> te
     return (int) ((emComum * 100.0) / normalizadasVaga.size());
 }
 
-
+//candidaturas
+public List<Long> listarVagasCandidatadas(Long usuarioId) {
+        return candidaturaRepo.findVagaIdsByUsuarioId(usuarioId);
+    }
 
 }

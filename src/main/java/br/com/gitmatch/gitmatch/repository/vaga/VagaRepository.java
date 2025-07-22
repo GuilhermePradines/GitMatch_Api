@@ -72,5 +72,7 @@ List<Vaga> findVagasAtivasPorTecnologias(@Param("tecNames") String[] tecNames);
     """, nativeQuery = true)
 List<Object[]> buscarCandidatosDetalhesPorVaga(@Param("idVaga") Long idVaga);
 
+void deleteAllByEmpresa(Usuario empresa);
+List<Vaga> findAllByEmpresa(Usuario empresa);
 
 }

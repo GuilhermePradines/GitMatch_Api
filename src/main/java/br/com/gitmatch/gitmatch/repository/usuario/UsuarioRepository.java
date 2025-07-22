@@ -10,5 +10,9 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
      List<Usuario> findByTipoUsuario(TipoUsuario tipoUsuario);
      boolean existsByEmail(String email);
      Optional<Usuario> findByGithubUsername(String githubUsername);
+     Optional<Usuario> findByEmailIgnoreCase(String email);
+     Optional<Usuario> findByFirebaseUidOrEmail(String firebaseUid, String email);
+     Optional<Usuario> findByFirebaseUid(String firebaseUid);
+
      
 }

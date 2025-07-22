@@ -16,6 +16,9 @@ public class Usuario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idUsuario;
 
+     @Column(unique = true)
+    private String firebaseUid; // Novo campo para vincular ao Firebase
+
     @Column(nullable = false)
     private String nome;
 
@@ -37,7 +40,8 @@ public class Usuario {
 
     @Column(unique = true)
     private String cnpj;
-
+    
+    @Column(unique = true)
     private String githubUsername;
 
     private Boolean termosAceitos = false;

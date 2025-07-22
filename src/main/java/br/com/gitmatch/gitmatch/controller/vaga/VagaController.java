@@ -84,12 +84,13 @@ private EntityManager entityManager;
         return ResponseEntity.ok(vagaAtualizada);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletarVaga(@PathVariable Long id,
-                                            @AuthenticationPrincipal Usuario usuario) {
-        vagaService.desativarVaga(id, usuario.getIdUsuario());
-        return ResponseEntity.noContent().build();
-    }
+    @DeleteMapping("/delete/{id}")
+public ResponseEntity<Void> deletarVaga(@PathVariable Long id,
+                                        @AuthenticationPrincipal Usuario usuario) {
+    vagaService.deletarVaga(id, usuario.getIdUsuario());
+    return ResponseEntity.noContent().build();
+}
+
 
 
     @GetMapping("/empresa/candidatosVaga/{idVaga}")
@@ -184,7 +185,7 @@ private EntityManager entityManager;
 
 
 
-@SuppressWarnings("unchecked")// suprimi pq eu sei do promebla com a entity manager   
+@SuppressWarnings("unchecked")
 public ResponseEntity<?> listarCandidatosDetalhadosRaw(@PathVariable Long idVaga) {
     Vaga vaga = vagaRepo.findById(idVaga)
             .orElseThrow(() -> new RuntimeException("Vaga não encontrada"));
@@ -200,7 +201,8 @@ public ResponseEntity<?> listarCandidatosDetalhadosRaw(@PathVariable Long idVaga
             u.github_username,
             c.percentual_compatibilidade,
             c.data_candidatura,
-            u.foto_perfil
+            u.foto_perfil,
+            u.email
         FROM candidaturas c
         JOIN usuarios u ON c.id_usuario = u.id_usuario
         WHERE c.id_vaga = :idVaga
@@ -219,6 +221,7 @@ public ResponseEntity<?> listarCandidatosDetalhadosRaw(@PathVariable Long idVaga
         String github = (String) row[2];
         Double compatibilidade = row[3] != null ? ((Number) row[3]).doubleValue() : null;
         String fotoPerfil = (String) row[5];
+        String email = (String) row[6];
 
         List<List<Object>> linguagens = new ArrayList<>();
         long totalBytesMatch = 0;
@@ -245,6 +248,7 @@ public ResponseEntity<?> listarCandidatosDetalhadosRaw(@PathVariable Long idVaga
         candidato.put("nome", nome);
         candidato.put("profissao", profissao);
         candidato.put("github", github);
+        candidato.put("email", email); // <-- aqui
         candidato.put("fotoPerfil", fotoPerfil);
         candidato.put("compatibilidade", compatibilidade);
         candidato.put("linguagens", linguagens);
@@ -390,5 +394,10 @@ public ResponseEntity<CandidaturaDetalhesDTO> candidatarSe(
     return ResponseEntity.ok(dto);
 }
 
+
+ @GetMapping("/usuario/{usuarioId}")
+    public List<Long> listarVagasCandidatadas(@PathVariable Long usuarioId) {
+        return vagaService.listarVagasCandidatadas(usuarioId);
+    }
 
 }

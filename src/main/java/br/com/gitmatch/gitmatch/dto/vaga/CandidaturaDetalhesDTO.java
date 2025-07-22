@@ -14,6 +14,7 @@ import java.util.List;
 public class CandidaturaDetalhesDTO {
     private Long idCandidatura;
     private Long idUsuario;
+    private String email;
     private Long idVaga;
     private Double percentualCompatibilidade;
     private LocalDateTime dataCandidatura;
